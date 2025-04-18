@@ -4,10 +4,13 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+
+import application.ConfigManager;
 
 public class Match {
 
@@ -15,8 +18,8 @@ public class Match {
 	private Club clubB;
 	private int goalsA;
 	private int goalsB;
-	private static String clubAScalation = "C:\\Users\\EnzoF\\OneDrive\\Documentos\\Documento-Pessoal\\Desenvolvimento\\Java\\Curso-JavaSpringBoot\\Tasks\\Exercicies\\Campeonato-Futebol-Exercicio\\src\\files\\escalacaoTimaA.csv";
-	private static String clubBScalation = "C:\\Users\\\\EnzoF\\OneDrive\\Documentos\\Documento-Pessoal\\Desenvolvimento\\Java\\Curso-JavaSpringBoot\\Tasks\\Exercicies\\Campeonato-Futebol-Exercicio\\src\\files\\escalacaoTimaB.csv";
+	private static String clubAScalation = ConfigManager.get("clubAScalation.path");
+	private static String clubBScalation = ConfigManager.get("clubBScalation.path");
 
 	public Match(Club clubA, Club clubB) {
 		this.clubA = clubA;
@@ -53,20 +56,29 @@ public class Match {
 		return clubBScalation;
 	}
 
-	public String getWinner() {
-		if (goalsA > goalsB) {
-			clubA.setScore(3);
-			clubB.setScore(0);
+	public String getWinner(List<Club> originalClubs) {
+
+		int result = goalsA - goalsB;
+
+		Club originalA = findOriginalClub(clubA.getName(), originalClubs);
+		Club originalB = findOriginalClub(clubB.getName(), originalClubs);
+		
+		if (result > 0) {
+			originalA.setScore(originalA.getScore() + 3);
 			return clubA.getName();
-		} else if (goalsB > goalsA) {
-			clubB.setScore(3);
-			clubA.setScore(0);
+		} else if (result < 0) {
+			originalB.setScore(originalB.getScore() + 3);
 			return clubB.getName();
 		} else {
-			clubA.setScore(1);
-			clubB.setScore(1);
+			originalA.setScore(originalA.getScore() + 1);
+			originalB.setScore(originalB.getScore() + 1);
 			return "empate";
 		}
+	}
+
+	private Club findOriginalClub(String name, List<Club> clubs) {
+		return clubs.stream().filter(c -> c.getName().equals(name)).findFirst()
+				.orElseThrow(() -> new RuntimeException("Club not found: " + name));
 	}
 
 	public void simulateMatch() {
@@ -80,61 +92,94 @@ public class Match {
 
 	public String getResult() {
 		return clubA.getName() + " " + goalsA + " x " + goalsB + " " + clubB.getName();
-		
+
 	}
 
-	public static List<Match> generateRandomMatches(List<Club> clubs, int numberOfMatches) {
+	public static List<Match> generateRandomMatches(List<Club> clubs) {
 		List<Match> matches = new ArrayList<>();
 		Set<Set<String>> matchKeys = new HashSet<>();
 
-		while (matches.size() < numberOfMatches) {
-			Club teamA = clubs.get(ThreadLocalRandom.current().nextInt(clubs.size()));
-			Club teamB = clubs.get(ThreadLocalRandom.current().nextInt(clubs.size()));
-			
-			if (teamA.equals(teamB))
-				continue;
+		for (int i = 0; i < clubs.size(); i++) {
+			for (int j = i + 1; j <= clubs.size() - 1; j++) {
 
-			Set<String> matchKey = teamA.getName().compareTo(teamB.getName()) < 0
-					? Set.of(teamA.getName(), teamB.getName())
-					: Set.of(teamB.getName(), teamA.getName());
+				Set<String> matchKey = Set.of(clubs.get(i).getName(), clubs.get(j).getName());
 
-			if (matchKeys.contains(matchKey))
-				continue;
+				if (matchKeys.contains(matchKey))
+					continue;
 
-			if (matchKeys.stream().flatMap(Set::stream)
-					.anyMatch(name -> name.equals(teamA.getName()) || name.equals(teamB.getName())))
-				continue;
+				matchKeys.add(matchKey);
+				
+	            Club teamA = clubs.get(i).cloneWithSamePlayers();
+	            Club teamB = clubs.get(j).cloneWithSamePlayers();
 
-			teamA.loadPlayersFromCsv(clubAScalation);
-			
-			teamB.loadPlayersFromCsv(clubBScalation);
 
-			matchKeys.add(matchKey);
-			matches.add(new Match(teamA, teamB));
-			
+				// Cada instância carrega seus próprios jogadores
+
+				if (clubAScalation == null) {
+					throw new RuntimeException("Caminho da configuração 'clubAScalation.path' não encontrado!");
+				}
+				if (clubBScalation == null) {
+					throw new RuntimeException("Caminho da configuração 'clubBScalation.path' não encontrado!");
+				}
+
+				teamA.loadPlayersFromCsv(clubAScalation);
+
+				teamB.loadPlayersFromCsv(clubBScalation);
+
+				Match match = new Match(teamA, teamB);
+
+				matches.add(match);
+			}
 		}
 
 		return matches;
+
 	}
 
 	public void writeGoalsToPlayer() {
-		//try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePathA))) {
-			List<Player> playersSorted = clubA.getPlayers();
+		List<Player> playersSortedA = clubA.getPlayers();
+		List<Player> playersSortedB = clubB.getPlayers();
 
-			int goalsAdded = 0;
+		int goalsAdded = 0;
 
-			while(goalsAdded < goalsA) {
-				Player player = playersSorted.get(ThreadLocalRandom.current().nextInt(playersSorted.size()));
-				if (goalsAdded == goalsA) {
-					return;
-				}
-				//else if(player.getGoals())
-				int goalsToAdd = (ThreadLocalRandom.current().nextInt(1, (goalsA - goalsAdded ) + 1 ));
-				player.setGoals(player.getGoals() + goalsToAdd);
-				goalsAdded += player.getGoals();
+		while (goalsAdded < goalsA) {
+			Player player = playersSortedA.get(ThreadLocalRandom.current().nextInt(playersSortedA.size()));
+			if (goalsAdded == goalsA) {
+				return;
 			}
-		//} catch (IOException e) {
-		//	System.out.println("Error putting goals to player in the file " + e.getMessage());
-		//}
+			// else if(player.getGoals())
+			int goalsToAdd = (ThreadLocalRandom.current().nextInt(1, (goalsA - goalsAdded) + 1));
+			player.setGoals(player.getGoals() + goalsToAdd);
+			goalsAdded += player.getGoals();
+		}
+
+		goalsAdded = 0;
+
+		while (goalsAdded < goalsB) {
+			Player player = playersSortedB.get(ThreadLocalRandom.current().nextInt(playersSortedB.size()));
+			if (goalsAdded == goalsB) {
+				return;
+			}
+			int goalsToAdd = (ThreadLocalRandom.current().nextInt(1, (goalsB - goalsAdded) + 1));
+			player.setGoals(player.getGoals() + goalsToAdd);
+			goalsAdded += player.getGoals();
+		}
+
+	}
+
+	public void printClubGoals() {
+		System.out.println("Gols dos jogadores: ");
+
+		getClubA().getPlayers().forEach((p) -> {
+			if (p.getGoals() > 0)
+				System.out.println(
+						String.format("%s - %s \nGols: %d \n", p.getName(), getClubA().getName(), p.getGoals()));
+		});
+
+		getClubB().getPlayers().forEach((p) -> {
+			if (p.getGoals() > 0)
+				System.out.println(
+						String.format("%s - %s \nGols: %d \n", p.getName(), getClubB().getName(), p.getGoals()));
+		});
 	}
 }

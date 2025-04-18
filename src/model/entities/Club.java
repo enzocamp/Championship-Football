@@ -9,9 +9,11 @@ import java.util.List;
 public class Club {
 
 	private String name;
-	private Integer score;
-	private Integer goals;
+	private int score;
+	private int goals;
 	private List<Player> players = new ArrayList<>();
+	
+	public Club() {}
 	
 	public Club(String name) {
 		this.name = name;
@@ -37,6 +39,10 @@ public class Club {
 		return players;
 	}
 	
+	public void setPlayers(List<Player> players) {
+		this.players = players;
+	}
+
 	public Integer getScore() {
 		return score;
 	}
@@ -54,7 +60,7 @@ public class Club {
 				String name = fields[0];
 				Integer goals = Integer.parseInt(fields[1]);
 				
-				players.add(new Player(name,goals));
+ 				players.add(new Player(name,goals));
 				
 				line = br.readLine();
 			}
@@ -63,6 +69,14 @@ public class Club {
 			System.out.println("Error reading players: " + e.getMessage());
 		}
 		
+	}
+	
+	public Club cloneWithSamePlayers() {
+	    Club cloned = new Club(this.name);
+	    // copia os jogadores sem ler do CSV novamente
+	    cloned.setPlayers(new ArrayList<>(this.players));
+	    cloned.setScore(this.score);
+	    return cloned;
 	}
 	
 }

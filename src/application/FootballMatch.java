@@ -1,12 +1,16 @@
 package application;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ThreadLocalRandom;
 
 import model.entities.Club;
@@ -16,7 +20,7 @@ public class FootballMatch {
 
 	public static void main(String[] args) {
 		
-		String clubsNamesPath = "C:\\Users\\EnzoF\\OneDrive\\Documentos\\Documento-Pessoal\\Desenvolvimento\\Java\\Curso-JavaSpringBoot\\Tasks\\Exercicies\\Campeonato-Futebol-Exercicio\\src\\files\\times.csv"; 
+		String clubsNamesPath = ConfigManager.get("clubs.path");
 		
 		List<Club> clubs = new ArrayList<>();
 		
@@ -36,16 +40,14 @@ public class FootballMatch {
 			System.out.println("Error reading clubs " + e.getMessage());
 		}
 		
-		List<Match> matches = Match.generateRandomMatches(clubs, 10);
+		List<Match> matches = Match.generateRandomMatches(clubs);
 
 		for (Match match : matches) {
-		    System.out.println(String.format("%s \nWinner: %s\n", match.getResult(), match.getWinner()));
+			String winner = match.getWinner(clubs);
+			System.out.println(String.format("%s \nWinner: %s\n", match.getResult(), winner));
 		    match.writeGoalsToPlayer();
-		    match.getClubA().getPlayers().forEach((p) -> {
-		    	if(p.getGoals() > 0)
-		    	System.out.println(String.format("Jogador: %s \nGols: %d \nTotal Gols:%d \n",
-		    			p.getName(), p.getGoals(), match.getClubA().getGoals()));
-		    });
+		    match.printClubGoals();
+		    System.out.println(String.format("Total Gols Partida: %d \n", match.getGoalsA() + match.getGoalsB()));
 		}
 		
 		System.out.println();
