@@ -31,10 +31,14 @@ public class FootballMatch {
 				String[] fields = line.split(",");
 				String name = fields[0];
 				
-				clubs.add(new Club(name));
+			
+				String cleanName = name.toLowerCase().replace(" ", "");
+				clubs.add(new Club(name,ConfigManager.get(String.format("club%sscalation", cleanName))));
 				
 				line = bw.readLine();
 			}
+			
+			
 		}
 		catch (IOException e) {
 			System.out.println("Error reading clubs " + e.getMessage());
@@ -42,21 +46,15 @@ public class FootballMatch {
 		
 		List<Match> matches = Match.generateRandomMatches(clubs);
 
-		for (Match match : matches) {
-			String winner = match.getWinner(clubs);
-			System.out.println(String.format("%s \nWinner: %s\n", match.getResult(), winner));
-		    match.writeGoalsToPlayer();
-		    match.printClubGoals();
-		    System.out.println(String.format("Total Gols Partida: %d \n", match.getGoalsA() + match.getGoalsB()));
-		}
+		matches.forEach(Match::simulateMatch);
 		
-		System.out.println();
-		
-		System.out.println("Resultado do Campeonato: ");
+		//clubs.stream().sorted((clubA,clubB) -> clubA.getScore().compareTo(clubB.getScore())).forEach(System.out::println);
+				
+		System.out.println(String.format("%-20s | %-7s | %s","Team","Score","Goals"));
 		
 		clubs.stream()
 	    .sorted(Comparator.comparing(Club::getScore).reversed())
-	    .forEach(club -> System.out.printf("%s - Pontos: %d%n", club.getName(), club.getScore()));
+	    .forEach(club -> System.out.printf("%-20s | %-7d | %d %n", club.getName(), club.getScore(), club.getGoals()));
 
 	}
 }

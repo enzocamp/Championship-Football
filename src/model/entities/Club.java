@@ -15,8 +15,9 @@ public class Club {
 	
 	public Club() {}
 	
-	public Club(String name) {
+	public Club(String name, String filePath) {
 		this.name = name;
+		loadPlayersFromCsv(filePath);
 	}
 
 	public String getName() {
@@ -57,7 +58,7 @@ public class Club {
 			
 			while(line != null) {
 				String[] fields = line.split(",");
-				String name = fields[0];
+				String name = String.format("%s - %s", fields[0], getName());
 				Integer goals = Integer.parseInt(fields[1]);
 				
  				players.add(new Player(name,goals));
@@ -71,12 +72,9 @@ public class Club {
 		
 	}
 	
-	public Club cloneWithSamePlayers() {
-	    Club cloned = new Club(this.name);
-	    // copia os jogadores sem ler do CSV novamente
-	    cloned.setPlayers(new ArrayList<>(this.players));
-	    cloned.setScore(this.score);
-	    return cloned;
+	@Override
+	public String toString() {
+		return String.format("%s: %d",name,score); 
 	}
 	
 }
