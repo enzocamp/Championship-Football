@@ -52,6 +52,7 @@ public class Match {
 		clubA.setGoals(clubA.getGoals() + goalsA);
 		clubB.setGoals(clubB.getGoals() + goalsB);
 		
+		
 		writeGoalsToPlayer();
 		
 		int result = goalsA - goalsB;
